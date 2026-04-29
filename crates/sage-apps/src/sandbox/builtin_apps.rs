@@ -1,5 +1,4 @@
 use anyhow::{Context, Result as AnyResult, anyhow};
-use sha2::{Digest, Sha256};
 use std::path::Path;
 use std::{fs, path::PathBuf};
 use tauri::command;

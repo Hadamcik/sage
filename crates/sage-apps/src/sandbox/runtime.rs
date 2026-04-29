@@ -1,6 +1,6 @@
 use crate::AppsHostState;
-use crate::runtime::apps_create_inline_runtime;
-use crate::runtime::start::CreateInlineRuntimeArgs;
+use crate::runtime::{apps_create_inline_runtime, SageAppRuntimeVisibility};
+use crate::runtime::start::CreateRuntimeArgs;
 use crate::runtime::stop::close_runtime_internal;
 use crate::security::RUNTIME_APPS_PREFIX;
 use std::collections::{BTreeMap, HashMap};
@@ -76,16 +76,15 @@ async fn start_internal_runtime_for_sandbox(
     app: &AppHandle,
     apps_state: &State<'_, AppsHostState>,
     app_id: &str,
-    visible: bool,
+    visibility: SageAppRuntimeVisibility,
     path: Option<String>,
     query: BTreeMap<String, String>,
 ) -> Result<(), String> {
     let debug_test_apps = debug_test_apps_enabled();
 
-    let args = CreateInlineRuntimeArgs {
+    let args = CreateRuntimeArgs {
         app_id: app_id.to_string(),
-        visible: if debug_test_apps { true } else { visible },
-        internal: true,
+        visibility: if debug_test_apps { SageAppRuntimeVisibility::Visible } else { visibility },
         debug_layout: debug_test_apps,
         path,
         query,

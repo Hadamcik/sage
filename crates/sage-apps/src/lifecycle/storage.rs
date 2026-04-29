@@ -216,7 +216,7 @@ mod tests {
     use crate::lifecycle::{
         app_dir, read_pending_storage_cleanup_entries, read_retired_app_origins,
     };
-    use crate::runtime::SageAppRuntimeRecord;
+    use crate::runtime::{SageAppRuntimeRecord, SageAppRuntimeVisibility};
     use crate::types::{
         SageAppCommon, SageAppIdentity, SageAppManifestFile, SageAppPackageManifest,
         SageAppPackageManifestParts, SageAppSnapshot, SageGrantedPermissions,
@@ -287,10 +287,11 @@ mod tests {
         let mut app = UserSageApp::new_installed(common, source).into_sage_app();
 
         if storage_may_contain_secrets {
-            let _record = SageAppRuntimeRecord::new_inline(
+            let _record = SageAppRuntimeRecord::new(
                 &mut app,
+                "test",
                 "sage-app://test/index.html",
-                true,
+                SageAppRuntimeVisibility::Visible,
                 false,
             );
         }

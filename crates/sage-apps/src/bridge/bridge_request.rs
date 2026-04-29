@@ -6,25 +6,25 @@ use crate::bridge::registry::BridgeRegistry;
 use crate::bridge::state::write_pending_approval;
 use crate::bridge::{
     RustBridgeApprovalEvent, RustBridgeApprovalRequest, RustBridgeInvokeResult, RustBridgeRequest,
-    RustBridgeResponse, response_channel_for_runtime_kind,
+    RustBridgeResponse, response_channel_for_app,
 };
 use crate::capabilities::{get_system_capability_definition, get_user_capability_definition};
 use crate::host::AppState;
 use crate::runtime::SageAppRuntimeKind;
 use crate::runtime::webview_locator::get_sage_webview;
-use crate::runtime::{assert_bridge_origin, resolve_app};
-use crate::types::SageApp;
+use crate::runtime::assert_bridge_origin;
+use crate::types::{SageApp, SharedSageApp};
 use tauri::{AppHandle, Emitter, Manager, State, Webview};
 use uuid::Uuid;
 
 pub async fn process(
-    app: AppHandle,
+    app_handle: AppHandle,
     webview: Webview,
     app_state: State<'_, AppState>,
     request: RustBridgeRequest,
     expected_runtime_kind: SageAppRuntimeKind,
 ) -> Result<RustBridgeInvokeResult, String> {
-    let expected_channel = response_channel_for_runtime_kind(expected_runtime_kind);
+    let expected_channel = response_channel_for_app(expected_runtime_kind);
 
     if let Err(response) = validate_request_basics(&request, expected_channel) {
         return Ok(RustBridgeInvokeResult::Immediate { response });
@@ -32,7 +32,7 @@ pub async fn process(
 
     let webview_label = webview.label().to_string();
 
-    let (app_id, runtime_kind) = match assert_bridge_origin(&app, &webview_label) {
+    let app = match assert_bridge_origin(&app_handle, &webview_label).await {
         Ok(value) => value,
         Err(err) => {
             return Ok(RustBridgeInvokeResult::Immediate {
@@ -46,7 +46,7 @@ pub async fn process(
         }
     };
 
-    if runtime_kind != expected_runtime_kind {
+    if app.webview_label_matches(&webview_label) {
         return Ok(RustBridgeInvokeResult::Immediate {
             response: RustBridgeResponse::error(
                 expected_channel,
@@ -57,8 +57,7 @@ pub async fn process(
         });
     }
 
-    let app_model = resolve_app(&app, &app_id)?;
-    let registry = BridgeRegistry::new_for_app(&app_model);
+    let registry = BridgeRegistry::new_for_app(&app);
 
     let Some(method) = registry.get(&request.method) else {
         return Ok(RustBridgeInvokeResult::Immediate {
@@ -74,7 +73,7 @@ pub async fn process(
     match method.capability() {
         BridgeMethodCapability::Ungated => {}
         BridgeMethodCapability::Required(capability) => {
-            if let Err(response) = verify_capability(&app_model, &request, capability) {
+            if let Err(response) = verify_capability(&app, &request, capability) {
                 return Ok(RustBridgeInvokeResult::Immediate { response });
             }
         }
@@ -82,7 +81,7 @@ pub async fn process(
 
     match method.approval_request(
         BridgeContext {
-            app: &app_model,
+            app: &app,
             source_label: &webview_label,
         },
         &request,
@@ -90,17 +89,17 @@ pub async fn process(
         Ok(Some(approval)) => {
             let approval_id = Uuid::new_v4().to_string();
 
-            let apps_state = app.state::<AppsHostState>();
+            let apps_state = app_handle.state::<AppsHostState>();
             write_pending_approval(
                 &apps_state,
                 &approval_id,
-                &app_model,
+                &app,
                 &webview_label,
                 &request,
             )
             .await;
 
-            emit_sage_approval_requested(&app, approval_id, approval)?;
+            emit_sage_approval_requested(&app_handle, approval_id, approval)?;
             return Ok(RustBridgeInvokeResult::Pending {});
         }
         Ok(None) => {}
@@ -117,7 +116,7 @@ pub async fn process(
     }
 
     let response =
-        execute_bridge_request(&app, &app_state, &app_model, &webview_label, &request).await;
+        execute_bridge_request(&app_handle, &app_state, &app, &webview_label, &request).await;
 
     Ok(RustBridgeInvokeResult::Immediate { response })
 }
@@ -125,7 +124,7 @@ pub async fn process(
 pub(crate) async fn execute_bridge_request(
     app_handle: &AppHandle,
     app_state: &State<'_, AppState>,
-    app: &SageApp,
+    app: &SharedSageApp,
     source_label: &str,
     request: &RustBridgeRequest,
 ) -> RustBridgeResponse {
@@ -167,7 +166,7 @@ pub(crate) async fn execute_bridge_request(
 }
 
 fn verify_capability(
-    app: &SageApp,
+    app: &SharedSageApp,
     request: &RustBridgeRequest,
     capability: BridgeCapability,
 ) -> Result<(), RustBridgeResponse> {
@@ -197,7 +196,7 @@ fn verify_capability(
 }
 
 fn verify_user_capability(
-    app: &SageApp,
+    app: &SharedSageApp,
     request: &RustBridgeRequest,
     capability: UserBridgeCapability,
     shared_with_app: bool,
@@ -248,7 +247,7 @@ fn verify_user_capability(
 }
 
 fn verify_system_capability(
-    app: &SageApp,
+    app: &SharedSageApp,
     request: &RustBridgeRequest,
     capability: SystemBridgeCapability,
     shared_with_app: bool,

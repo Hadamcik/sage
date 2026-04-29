@@ -63,7 +63,7 @@ impl BridgeMethod for BridgeSend {
             ))
         })?;
 
-        crate::sandbox::ingest_bridge_send_payload(ctx.app.id(), &payload_value, tools.host_state)
+        crate::sandbox::ingest_bridge_send_payload(&ctx.app.id(), &payload_value, tools.host_state)
             .await;
 
         Ok(Box::new(BridgeSendResult { ok: true }))

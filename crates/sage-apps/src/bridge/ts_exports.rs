@@ -33,7 +33,7 @@ pub fn export_system_bridge_typescript() -> Result<String, String> {
     let mut types = TypeCollection::default();
 
     types.register::<RuntimeTargetParams>();
-    types.register::<SageAppRuntimeRecord>();
+    //types.register::<SageAppRuntimeRecord>();
     types.register::<SystemKillRuntimeResult>();
     types.register::<RuntimeManagerRuntimesChangedEvent>();
 

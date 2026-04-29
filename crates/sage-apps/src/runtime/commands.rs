@@ -1,5 +1,5 @@
 use crate::AppsHostState;
-use crate::runtime::start::{CreateInlineRuntimeArgs, create_inline_runtime};
+use crate::runtime::start::{CreateRuntimeArgs, create_runtime};
 use crate::runtime::state::{SageAppRuntimeRecord, list_runtimes};
 use crate::runtime::stop::{SystemKillRuntimeResult, kill_runtime};
 use crate::runtime::{RuntimeTargetParams, focus_runtime, hide_runtime};
@@ -10,9 +10,9 @@ use tauri::{AppHandle, State};
 pub async fn apps_create_inline_runtime(
     app: AppHandle,
     apps_state: State<'_, AppsHostState>,
-    args: CreateInlineRuntimeArgs,
+    args: CreateRuntimeArgs,
 ) -> Result<SageAppRuntimeRecord, String> {
-    create_inline_runtime(app, apps_state, args).await
+    create_runtime(app, apps_state, args).await
 }
 
 #[tauri::command]
