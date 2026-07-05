@@ -4,8 +4,8 @@ use sage_api::wallet_connect::SignMessageWithPublicKey;
 
 use crate::{
     BridgeApprovalRequestResult, BridgeContext, BridgeHandleResult, BridgeMethod,
-    BridgeMethodCapability, BridgeMethodHandleError, BridgeTools, RustBridgeRequest,
-    UserBridgeCapability, parse_required_params,
+    BridgeMethodCapability, BridgeMethodHandleError, BridgeTools, RustBridgeApprovalBody,
+    RustBridgeApprovalRequest, RustBridgeRequest, UserBridgeCapability, parse_required_params,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -24,9 +24,14 @@ impl BridgeMethod for WalletSignCoinSpends {
     fn approval_request(
         &self,
         _ctx: BridgeContext<'_>,
-        _request: &RustBridgeRequest,
+        request: &RustBridgeRequest,
     ) -> BridgeApprovalRequestResult {
-        Ok(None)
+        let params = parse_required_params::<SignCoinSpends>(self, request)?;
+        Ok(Some(RustBridgeApprovalRequest {
+            body: RustBridgeApprovalBody::SignCoinSpends {
+                spends: params.coin_spends.len() as u32,
+            },
+        }))
     }
 
     async fn handle(
@@ -63,9 +68,14 @@ impl BridgeMethod for WalletSignMessage {
     fn approval_request(
         &self,
         _ctx: BridgeContext<'_>,
-        _request: &RustBridgeRequest,
+        request: &RustBridgeRequest,
     ) -> BridgeApprovalRequestResult {
-        Ok(None)
+        let params = parse_required_params::<SignMessageWithPublicKey>(self, request)?;
+        Ok(Some(RustBridgeApprovalRequest {
+            body: RustBridgeApprovalBody::SignMessage {
+                message: params.message,
+            },
+        }))
     }
 
     async fn handle(

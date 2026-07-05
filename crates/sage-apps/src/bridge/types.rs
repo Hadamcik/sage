@@ -80,6 +80,12 @@ pub enum RustBridgeApprovalBody {
     SendXch {
         summary: WalletSendXchParams,
     },
+    SignCoinSpends {
+        spends: u32,
+    },
+    SignMessage {
+        message: String,
+    },
     CapabilityGrant {
         capability: UserBridgeCapability,
         definition: SageAppCapabilityDefinitionView,
