@@ -9,6 +9,9 @@ interface Props {
 }
 
 export function SignCoinSpendsApprovalCard({ approval, appName }: Props) {
+  const coinSpends = approval.coin_spends;
+  const json = JSON.stringify(coinSpends, null, 2);
+
   return (
     <div className='space-y-3'>
       <div className='flex items-start gap-3'>
@@ -30,7 +33,16 @@ export function SignCoinSpendsApprovalCard({ approval, appName }: Props) {
       </div>
 
       <div className='space-y-2 rounded-xl border bg-background/70 p-3'>
-        <ApprovalDetailRow label='Coin spends' value={String(approval.spends)} />
+        <ApprovalDetailRow label='Coin spends' value={String(coinSpends.length)} />
+      </div>
+
+      <div className='rounded-xl border bg-background/70 p-3'>
+        <div className='mb-2 text-xs font-medium text-muted-foreground'>
+          Coin spends
+        </div>
+        <pre className='max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed'>
+          {json}
+        </pre>
       </div>
     </div>
   );

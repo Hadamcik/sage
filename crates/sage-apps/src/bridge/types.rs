@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use specta::Type;
 
+use sage_api::CoinSpendJson;
+
 use crate::{
     BridgeRegistryKind, SageAppCapabilityDefinitionView, SageNetworkWhitelistEntry, SharedSageApp,
     UserBridgeCapability, WalletSendXchParams,
@@ -81,7 +83,7 @@ pub enum RustBridgeApprovalBody {
         summary: WalletSendXchParams,
     },
     SignCoinSpends {
-        spends: u32,
+        coin_spends: Vec<CoinSpendJson>,
     },
     SignMessage {
         message: String,

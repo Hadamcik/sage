@@ -29,7 +29,7 @@ impl BridgeMethod for WalletSignCoinSpends {
         let params = parse_required_params::<SignCoinSpends>(self, request)?;
         Ok(Some(RustBridgeApprovalRequest {
             body: RustBridgeApprovalBody::SignCoinSpends {
-                spends: params.coin_spends.len() as u32,
+                coin_spends: params.coin_spends,
             },
         }))
     }
