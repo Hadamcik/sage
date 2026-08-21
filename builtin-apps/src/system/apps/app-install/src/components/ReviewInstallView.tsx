@@ -32,6 +32,7 @@ export function ReviewInstallView({
   definitions: SageAppCapabilityDefinitionView[];
 }) {
   const manifest = installManifest(source);
+  const compatibility = source.compatibility;
 
   const [step, setStep] = useState<Step>('permissions');
   const [installing, setInstalling] = useState(false);
@@ -88,6 +89,8 @@ export function ReviewInstallView({
   const canInstall =
     !installing &&
     !walletsLoading &&
+    compatibility.status.kind !== 'requiresNewerSage' &&
+    compatibility.status.kind !== 'invalid' &&
     (walletScope.kind === 'allWallets' || walletScope.fingerprints.length > 0);
 
   async function install() {
@@ -108,6 +111,45 @@ export function ReviewInstallView({
 
   if (!manifest || !previewApp) {
     return <UnsupportedManifestView source={source} error={error} />;
+  }
+
+  if (
+    compatibility.status.kind === 'requiresNewerSage' ||
+    compatibility.status.kind === 'invalid'
+  ) {
+    return (
+      <AppModalShell
+        appName={manifest.name}
+        appIcon={resolveInstallIcon(source)}
+        title='App cannot be installed'
+        footer={
+          <div className='flex justify-end'>
+            <button
+              className='rounded-md border border-border px-4 py-2 text-sm'
+              onClick={closeSelf}
+            >
+              Close
+            </button>
+          </div>
+        }
+      >
+        <div className='space-y-3 text-sm'>
+          <h1 className='text-lg font-semibold'>
+            {compatibility.status.kind === 'requiresNewerSage'
+              ? 'Requires a newer Sage'
+              : 'Invalid Sage version requirement'}
+          </h1>
+          {compatibility.status.kind === 'requiresNewerSage' ? (
+            <p className='text-muted-foreground'>
+              This app requires Sage {compatibility.status.minimumVersion} or
+              newer. You are running Sage {compatibility.currentVersion}.
+            </p>
+          ) : (
+            <p className='text-destructive'>{compatibility.status.reason}</p>
+          )}
+        </div>
+      </AppModalShell>
+    );
   }
 
   return (
@@ -163,6 +205,15 @@ export function ReviewInstallView({
       }
     >
       <div className='space-y-5'>
+        {compatibility.status.kind === 'untestedNewerSage' ? (
+          <div className='rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300'>
+            This app has only been tested through Sage{' '}
+            {compatibility.status.testedMaxVersion}. You are running Sage{' '}
+            {compatibility.currentVersion}, so some features may not work as
+            expected.
+          </div>
+        ) : null}
+
         {step === 'permissions' ? (
           <AppPermissionEditor
             app={previewApp}

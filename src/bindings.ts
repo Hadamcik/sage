@@ -401,6 +401,9 @@ async appsCheckAppUpdate(appId: string) : Promise<SageAppUrlPreview | null> {
 async appsApplyAppUpdate(appId: string) : Promise<SageAppView> {
     return await TAURI_INVOKE("apps_apply_app_update", { appId });
 },
+async appsRecoverAppUpdate(appId: string) : Promise<null> {
+    return await TAURI_INVOKE("apps_recover_app_update", { appId });
+},
 async appsClearRuntimeBrowsingData(appId: string) : Promise<null> {
     return await TAURI_INVOKE("apps_clear_runtime_browsing_data", { appId });
 },
@@ -797,7 +800,7 @@ export type CombineOffersResponse = {
  * Combined offer string
  */
 offer: string }
-export type CorruptedInstalledSageApp = { id: string; icon?: SageAppIconView | null; appDir: string; error: string; manifestHeader?: SageAppManifestHeaderV0 | null; source?: UserSageAppSource | null }
+export type CorruptedInstalledSageApp = { id: string; icon?: SageAppIconView | null; appDir: string; error: string; manifestHeader?: SageAppManifestRecoveryHeaderV0 | null; source?: UserSageAppSource | null; compatibility?: SageAppCompatibility | null }
 /**
  * Create a new DID
  */
@@ -2268,11 +2271,19 @@ export type RustBridgeRequest = { bridgeVersion: string | null; id: string; meth
 export type RustBridgeSuccessResponse = { bridgeVersion: string; id: string; ok: boolean; resultJson: string }
 export type SageAppAuthor = { name: string; avatar: string | null }
 export type SageAppCommonView = { identity: SageAppIdentityView; grantedPermissions: SageGrantedPermissionsView; walletScope: SageAppWalletScope; activeSnapshot: SageAppSnapshotView; icon: SageAppIconView | null }
+export type SageAppCompatibility = { currentVersion: string; status: SageAppCompatibilityStatus }
+export type SageAppCompatibilityStatus = { kind: "compatible" } | { kind: "requiresNewerSage"; minimumVersion: string } | { kind: "untestedNewerSage"; testedMaxVersion: string } | { kind: "invalid"; reason: string }
 export type SageAppDonation = { address: string }
 export type SageAppIconView = { mime: string; bytes: number[] }
 export type SageAppIdentityView = { id: string; originId: string }
 export type SageAppManifestFile = { path: string; sha256: string; size: number }
 export type SageAppManifestHeaderV0 = { manifestVersion?: SageAppManifestVersion; name: string; icon?: string | null; sageVersion: SageAppManifestSageVersion }
+/**
+ * Minimal header used to identify and recover an installed app even when its
+ * full manifest no longer matches the current manifest schema. Compatibility
+ * metadata is optional here so legacy manifests still retain their identity.
+ */
+export type SageAppManifestRecoveryHeaderV0 = { manifestVersion?: SageAppManifestVersion; name: string; icon?: string | null; sageVersion?: SageAppManifestSageVersion | null }
 export type SageAppManifestSageVersion = { min: string; testedMax?: string | null }
 export type SageAppManifestVersion = number
 export type SageAppPackageManifest = { manifestVersion: SageAppManifestVersion; name: string; icon: string | null; sageVersion: SageAppManifestSageVersion; version: string; permissions: SageRequestedPermissions; files: SageAppManifestFile[]; totalBytes: number; entry: string | null; author: SageAppAuthor | null; donation: SageAppDonation | null }
