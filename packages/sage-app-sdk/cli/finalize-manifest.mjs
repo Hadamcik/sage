@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { bech32m } from 'bech32';
 
 const MAX_MANIFEST_SIZE_BYTES = 1024 * 1024;
 const MAX_FILE_COUNT = 2000;
@@ -133,6 +134,28 @@ function validateSourceManifest(manifest) {
       Array.isArray(manifest.permissions))
   ) {
     fail('Source manifest permissions must be an object if provided');
+  }
+
+  if (manifest.donation != null) {
+    const address = manifest.donation?.address;
+
+    if (typeof address !== 'string' || !isValidDonationAddress(address)) {
+      fail('Source manifest donation.address must be a valid xch address');
+    }
+  }
+}
+
+function isValidDonationAddress(address) {
+  try {
+    const decoded = bech32m.decode(address);
+
+    if (decoded.prefix !== 'xch') {
+      return false;
+    }
+
+    return bech32m.fromWords(decoded.words).length === 32;
+  } catch {
+    return false;
   }
 }
 

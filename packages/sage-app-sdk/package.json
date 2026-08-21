@@ -54,8 +54,12 @@
     "generate:types": "node ./scripts/export-types.mjs",
     "build": "pnpm run generate:types && tsup && cp src/theme/theme.css dist/theme.css && cp src/theme/theme-css.d.ts dist/theme-css.d.ts",
     "dev": "pnpm run generate:types && tsup --watch",
+    "test": "node --test ./tests/*.test.mjs",
     "clean": "rm -rf dist",
     "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "bech32": "^2.0.0"
   },
   "devDependencies": {
     "tsup": "^8.5.1",
