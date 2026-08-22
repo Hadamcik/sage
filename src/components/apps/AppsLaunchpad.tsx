@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppTile } from '@/components/apps/AppTile';
 import { formatAppError } from '@/lib/apps/formatAppError.ts';
 import { openAppPermissionsReview } from '@/lib/apps/openAppUpdate.ts';
+import { toast } from 'react-toastify';
 
 type UserInstalledEntry = { kind: 'user' } & UserSageAppView;
 type SystemInstalledEntry = { kind: 'system' } & SystemSageAppView;
@@ -112,6 +113,7 @@ export function AppsLaunchpad() {
     clearAppStorage,
     pendingUpdates,
     busyAppIds,
+    setBusy,
     getLaunchGate,
   } = useApps();
 
@@ -208,14 +210,16 @@ export function AppsLaunchpad() {
     }
   }
 
-  async function handleApplyUpdate(appId: string) {
+  async function handleApplyUpdate(appId: string, manifestHash: string) {
     setClearDataErrorByAppId((prev) => ({
       ...prev,
       [appId]: null,
     }));
 
+    setBusy(appId, true);
+
     try {
-      await commands.appsApplyAppUpdate(appId);
+      await commands.appsApplyAppUpdate(appId, manifestHash);
     } catch (err) {
       const message = formatAppError(err);
 
@@ -225,6 +229,9 @@ export function AppsLaunchpad() {
         ...prev,
         [appId]: `Update failed: ${message}`,
       }));
+      toast.error(`Update failed: ${message}`);
+    } finally {
+      setBusy(appId, false);
     }
   }
 
@@ -501,15 +508,20 @@ export function AppsLaunchpad() {
           void handleCheckForUpdate(contextMenu.app.common.identity.id);
         }}
         onUpdate={() => {
-          if (!contextMenu || !isUserInstalledEntry(contextMenu.app)) {
+          if (
+            !contextMenu ||
+            !isUserInstalledEntry(contextMenu.app) ||
+            contextMenuPendingUpdate.kind === 'none'
+          ) {
             return;
           }
 
           const appId = contextMenu.app.common.identity.id;
+          const manifestHash = contextMenuPendingUpdate.manifestHash;
 
           closeContextMenu();
 
-          void handleApplyUpdate(appId);
+          void handleApplyUpdate(appId, manifestHash);
         }}
         onChangePermissions={() => {
           if (!contextMenu || !isUserInstalledEntry(contextMenu.app)) {
