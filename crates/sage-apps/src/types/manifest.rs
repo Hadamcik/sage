@@ -201,8 +201,7 @@ impl TryFrom<SageAppPackageManifestParts> for SageAppPackageManifest {
 
         let donation = value
             .donation
-            .map(|donation| SageAppDonation::new(donation.address()))
-            .transpose()?;
+            .and_then(|donation| SageAppDonation::new(donation.address()).ok());
 
         let total_bytes = validate_manifest_files(&value.files)?;
 
@@ -624,6 +623,27 @@ mod tests {
         .unwrap();
 
         assert_eq!(manifest.total_bytes(), 123);
+    }
+
+    #[test]
+    fn manifest_ignores_invalid_donation_address() {
+        let manifest: SageAppPackageManifest = serde_json::from_value(serde_json::json!({
+            "manifestVersion": 0,
+            "sageVersion": { "min": "0.13.0" },
+            "name": "Test App",
+            "version": "1.0.0",
+            "donation": {
+                "address": "txch1juv3a2rlelg7k52g6g7kze4j7rrxlgx88uu70d7x4p0kwx49znyq4xhjyy"
+            },
+            "files": [{
+                "path": "index.html",
+                "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+                "size": 1
+            }]
+        }))
+        .unwrap();
+
+        assert_eq!(manifest.donation(), None);
     }
 
     #[test]

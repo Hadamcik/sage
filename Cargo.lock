@@ -6544,6 +6544,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "chia-wallet-sdk",
  "erased-serde",
  "futures",
  "hex",
