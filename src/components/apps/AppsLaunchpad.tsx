@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppTile } from '@/components/apps/AppTile';
 import { formatAppError } from '@/lib/apps/formatAppError.ts';
 import { openAppPermissionsReview } from '@/lib/apps/openAppUpdate.ts';
+import { toast } from 'react-toastify';
 
 type UserInstalledEntry = { kind: 'user' } & UserSageAppView;
 type SystemInstalledEntry = { kind: 'system' } & SystemSageAppView;
@@ -253,11 +254,7 @@ export function AppsLaunchpad() {
       const message = formatAppError(err);
 
       console.error('applyAppUpdate failed:', err);
-
-      setClearDataErrorByAppId((prev) => ({
-        ...prev,
-        [appId]: `Update failed: ${message}`,
-      }));
+      toast.error(`Update failed: ${message}`);
     } finally {
       setBusy(appId, false);
     }
